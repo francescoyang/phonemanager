@@ -28,6 +28,7 @@ import android.content.pm.PackageInfo;
 public class androidService extends Service {
 	int i = 0;
 	int testtimes = 0;
+	private static final String TAG = "PHONESERVICE";
 
 	@Override
 	public void onCreate() {
@@ -56,6 +57,25 @@ public class androidService extends Service {
 		// TODO Auto-generated method stub
 		return null;
 	}
+	
+	@Override
+	public void onStart(Intent intent, int startId) {
+		Log.e(TAG, "start onStart~~~");
+		super.onStart(intent, startId);	
+	}
+	
+	@Override
+	public void onDestroy() {
+		Log.e(TAG, "start onDestroy~~~");
+		super.onDestroy();
+	}
+	
+	@Override
+	public boolean onUnbind(Intent intent) {
+		Log.e(TAG, "start onUnbind~~~");
+		return super.onUnbind(intent);
+	}
+	
 
 	private void getVideosInfo() {
 		i = 0;
@@ -211,11 +231,11 @@ public class androidService extends Service {
 			
 			//String size = 
 			
-			Log.d("apk", tmpInfo.appName);
-			Log.d("apk", tmpInfo.packageName);
-			Log.d("apk", tmpInfo.versionName);
-			Log.d("apk", "" + tmpInfo.versionCode);
-			Log.d("apk", "");
+//			Log.d("apk", tmpInfo.appName);
+//			Log.d("apk", tmpInfo.packageName);
+//			Log.d("apk", tmpInfo.versionName);
+//			Log.d("apk", "" + tmpInfo.versionCode);
+//			Log.d("apk", "");
 		  	
 			Appmanager.setappinfo(1 ,1,tmpInfo.appName,tmpInfo.packageName, tmpInfo.versionName, "123456",  j);
 /*
