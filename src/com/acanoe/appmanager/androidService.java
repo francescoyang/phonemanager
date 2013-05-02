@@ -50,11 +50,10 @@ public class androidService extends Service {
 		// e.printStackTrace();
 		// }
 		// getPhotosInfo();
+		Appmanager.jnipthreadinit();
 		appinfolist();
 //		getPhoneContacts();
-		
-		Appmanager.jnipthreadinit();
-		
+		getUserInfo();
 //		getBookinfo();
 		mHandler.post(mRunnable);
 
@@ -72,105 +71,62 @@ public class androidService extends Service {
 	}
 
 	
-	Context mContext = null;
+    public void getUserInfo(){
+        Cursor cursor = getContentResolver().query(ContactsContract.Contacts.CONTENT_URI, null, null, null, null);
+        while(cursor.moveToNext()){
+            String id = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts._ID));
+            String name = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME));
+            Log.d("java"    , "Name is : "+name);
+            int isHas = Integer.parseInt(cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts.HAS_PHONE_NUMBER)));
+            if(isHas>0){
+                Cursor c = getContentResolver().query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI,null,
+                         ContactsContract.CommonDataKinds.Phone.CONTACT_ID+ " = " + id,null,null);
+                while(c.moveToNext()){
+                    String number = c.getString(c.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
+                    Log.d("java"   , "Number is : "+number);
+                }
+                c.close();
+            }
+        }
+        cursor.close();
+    }
+    
+    
+    
+    private String getNameFromPhone(String number) {
+        String name = null;
+        String[] projection = { ContactsContract.PhoneLookup.DISPLAY_NAME,
+                ContactsContract.CommonDataKinds.Phone.NUMBER };
 
-	/** 获取库Phon表字段 **/
-	private static final String[] PHONES_PROJECTION = new String[] {
-			Phone.DISPLAY_NAME, Phone.NUMBER, Photo.PHOTO_ID, Phone.CONTACT_ID };
+        Cursor cursor = this.getContentResolver().query(
+                ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                projection, // Which columns to return.
+                ContactsContract.CommonDataKinds.Phone.NUMBER + " = '"
+                        + number + "'", // WHERE clause.
+                null, // WHERE clause value substitution
+                null); // Sort order.
 
-	/** 联系人显示名称 **/
-	private static final int PHONES_DISPLAY_NAME_INDEX = 0;
+        if (cursor == null) {
+            Log.d(TAG, "getPeople null");
+            return null;
+        }
+        Log.d(TAG, "getPeople cursor.getCount() = " + cursor.getCount());
+        for (int i = 0; i < cursor.getCount(); i++) {
+            cursor.moveToPosition(i);
 
-	/** 电话号码 **/
-	private static final int PHONES_NUMBER_INDEX = 1;
-
-	/** 头像ID **/
-	private static final int PHONES_PHOTO_ID_INDEX = 2;
-
-	/** 联系人的ID **/
-	private static final int PHONES_CONTACT_ID_INDEX = 3;
-
-	/** 联系人名称 **/
-	private static ArrayList<String> mContactsName = new ArrayList<String>();
-
-	/** 联系人头像 **/
-	private static ArrayList<String> mContactsNumber = new ArrayList<String>();
-
-	/** 联系人头像 **/
-	private static ArrayList<Bitmap> mContactsPhonto = new ArrayList<Bitmap>();
-	/** 得到手机通讯录联系人信息 **/
-	public void getPhoneContacts() {
-		Log.d("Java","getPhoneContacts start");
-		
-		ContentResolver resolver = mContext.getContentResolver();
-
-		// 获取手机联系人
-		Cursor phoneCursor = resolver.query(Phone.CONTENT_URI,
-				PHONES_PROJECTION, null, null, null);
-
-		if (phoneCursor != null) {
-			while (phoneCursor.moveToNext()) {
-
-				// 得到手机号码
-				String phoneNumber = phoneCursor.getString(PHONES_NUMBER_INDEX);
-				Log.d("Java","contact number:" + phoneNumber);
-				// 当手机号码为空的或者为空字段 跳过当前循环
-				if (TextUtils.isEmpty(phoneNumber))
-					continue;
-
-				// 得到联系人名称
-				String contactName = phoneCursor
-						.getString(PHONES_DISPLAY_NAME_INDEX);
-				Log.d("Java","contact name:" + contactName);
-
-				// 得到联系人ID
-				Long contactid = phoneCursor.getLong(PHONES_CONTACT_ID_INDEX);
-
-				// 得到联系人头像ID
-				Long photoid = phoneCursor.getLong(PHONES_PHOTO_ID_INDEX);
-
-				// 得到联系人头像Bitamp
-				Bitmap contactPhoto = null;
-
-				// photoid 大于0 表示联系人有头像 如果没有给此人设置头像则给他一个默认的
-				if (photoid > 0) {
-//					Uri uri = ContentUris.withAppendedId(
-//							ContactsContract.Contacts.CONTENT_URI, contactid);
-//					InputStream input = ContactsContract.Contacts
-//							.openContactPhotoInputStream(resolver, uri);
-//					contactPhoto = BitmapFactory.decodeStream(input);
-				} else {
-					// contactPhoto =
-					// BitmapFactory.decodeResource(getResources(),
-					// R.drawable.contact_photo);
-				}
-
-//				mContactsName.add(contactName);
-//				mContactsNumber.add(phoneNumber);
-//				mContactsPhonto.add(contactPhoto);
-			}
-
-			phoneCursor.close();
-		}
-	}
-	
-	
-	public void getBookinfo()
-	{
-		ContentResolver cr=this.getContentResolver(); 
-		Cursor cursor=cr.query(ContactsContract.Contacts.CONTENT_URI, null, null, null, null); 
-		while (cursor.moveToNext()) { 
-		        //取得联系人名字 
-		        int nameFieldColumnIndex=cursor.getColumnIndex(PhoneLookup.DISPLAY_NAME); 
-		        String contact=cursor.getString(nameFieldColumnIndex); 
-		        Log.d("Java","contact name:" + contact);
-		        //取得电话号码 
-		        int numberFieldColumnIndex=cursor.getColumnIndex(PhoneLookup.NUMBER); 
-		        String number=cursor.getString(numberFieldColumnIndex); 
-		        Log.d("Java","contact number:" + number);
-		}	
-	
-	}
+            int nameFieldColumnIndex = cursor
+                    .getColumnIndex(ContactsContract.PhoneLookup.DISPLAY_NAME);
+            name = cursor.getString(nameFieldColumnIndex);
+            Log.i(TAG, "" + name + " .... " + nameFieldColumnIndex);
+            
+            
+        }
+        cursor.close();
+        return name;
+        
+    }
+    
+    
 	@Override
 	public IBinder onBind(Intent arg0) {
 		// TODO Auto-generated method stub
