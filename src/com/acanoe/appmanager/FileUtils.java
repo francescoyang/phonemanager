@@ -6,40 +6,59 @@ import java.io.IOException;
 import android.os.Environment;
 
 public class FileUtils {
+	
+	// 电子证据存放基本路径
+	 private static String basePath;
+	 // 电子证据存放根路径
+	 private static String evidencePath;
+	 // 照片基本存放路径
+	 private static String imageBasePath;
     private static String SDPATH;
+    
+    /**
+     * 1、判断SD卡是否存在
+     */
+    public static boolean hasSdcard() {
+        String status = Environment.getExternalStorageState();
+        if (status.equals(Environment.MEDIA_MOUNTED)) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+    
+
+    
 
     public String getSDPATH() {
             return SDPATH;
     }
 
     public  FileUtils() {
-            // 得到当前外部存储设备的目录
-            // /SDCARD
+            // 寰楀埌褰撳墠澶栭儴瀛樺偍璁惧鐨勭洰褰�            // /SDCARD
             SDPATH = Environment.getExternalStorageDirectory() +"/";
     }
 
     /**
-     * 在SD卡上创建文件
+     * 鍦⊿D鍗′笂鍒涘缓鏂囦欢
      * 
      * @throws IOException
      */
-    public File creatSDFile(String fileName) throws IOException {
-            File file = new File(SDPATH + fileName);
+    public static File creatSDFile(String fileName) throws IOException {
+            File file = new File(fileName);
             file.createNewFile();
             return file;
     }
 
-    /**
-     * 在SD卡上创建目录
-     * 
-     * @param dirName
-     */
+ 
     public static File creatSDDir(String dirName) {
            // File dir = new File(SDPATH + dirName);
     	 File dir = new File(dirName);
             dir.mkdir();
             return dir;
     }
+    
+
     
     public static boolean isFolderExists(String strFolder) {
         File file = new File(strFolder);        
@@ -56,16 +75,14 @@ public class FileUtils {
 
     }
 
-    /**
-     * 判断SD卡上的文件夹是否存在
-     */
+    
     public boolean isFileExist(String fileName) {
             File file = new File(SDPATH + fileName);
             return file.exists();
     }
 
     /**
-     * 创建
+     * 鍒涘缓
      */
     public File write2SDFromInput(String path, String fileName) {
             File file = null;
