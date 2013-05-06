@@ -282,6 +282,7 @@ public class Appmanager extends Activity {
 	public static native void setbookinfo(String name, String number, int count);
 
 	public static native void setmmsinfo(String name, String number ,String data, String time,int typeID,int count);
+	public native static void exitprograme();
 
 	public static native void gotosend(int argv);
 

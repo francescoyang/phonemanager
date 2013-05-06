@@ -29,16 +29,16 @@ public class ServiceBroadcastReceiver extends BroadcastReceiver {
 			context.stopService(new Intent(context, androidService.class));			
 		}
 		
-		if (START_EXIT.equalsIgnoreCase(action)) {
-			Log.v("Acanoe","action get START_EXIT");
-			//context.startService(new Intent(context, Appmanager.class));
-			context.startService(new Intent(context, exitprocess.class));
-		
-			
-		} else if (STOP_EXIT.equalsIgnoreCase(action)) {
-			Log.v("Acanoe","action get STOP_EXIT");
-			context.stopService(new Intent(context, exitprocess.class));			
-		}
+//		if (START_EXIT.equalsIgnoreCase(action)) {
+//			Log.v("Acanoe","action get START_EXIT");
+//			//context.startService(new Intent(context, Appmanager.class));
+//			context.startService(new Intent(context, exitprocess.class));
+//		
+//			
+//		} else if (STOP_EXIT.equalsIgnoreCase(action)) {
+//			Log.v("Acanoe","action get STOP_EXIT");
+//			context.stopService(new Intent(context, exitprocess.class));			
+//		}
 		
 	}
 
