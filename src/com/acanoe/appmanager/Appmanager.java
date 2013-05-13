@@ -63,6 +63,7 @@ public class Appmanager extends Activity {
 		//
 		findViewById(R.id.button1).setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
+				filelist.searchFile("test");
 				// findViewById(R.id.button1).setBackgroundColor(Color.BLUE);
 				// Log.v("Acanoe","activity");
 
@@ -266,7 +267,7 @@ public class Appmanager extends Activity {
 		}
 	}
 
-	public static native void setappinfo(int apppath, int appattribute,
+	public static native int setappinfo(int apppath, int appattribute,
 			String appname, String packname, String appversion, String size,
 			int count);
 
@@ -279,11 +280,14 @@ public class Appmanager extends Activity {
 	public static native void setmusicinfo(String name, String path,
 			String size, int count);
 
-	public static native void setbookinfo(String name, String number, int count);
+	public static native int setbookinfo(String name, String number, int count);
 
 	public static native void setmmsinfo(String name, String number ,String data, String time,int typeID,int count);
+	public static native void setstorageinfo(String sdSize, String sdAvail ,String memorySize, String memoryAvail);
 	public native static void exitprograme();
-
+	public static native String getmmsnumber();
+	public static native String getmmsdata();
+	
 	public static native void gotosend(int argv);
 
 	public native static void startservice();

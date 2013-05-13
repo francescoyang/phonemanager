@@ -9,35 +9,50 @@ import java.io.IOException;
 import java.sql.Date;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
+import android.app.Activity;
+import android.app.PendingIntent;
 import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteException;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.media.ThumbnailUtils;
 import android.net.Uri;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.IBinder;
+import android.os.StatFs;
 import android.provider.ContactsContract;
 import android.provider.MediaStore;
 import android.provider.ContactsContract.PhoneLookup;
 import android.provider.ContactsContract.CommonDataKinds.Phone;
 import android.provider.ContactsContract.CommonDataKinds.Photo;
+import android.telephony.gsm.SmsManager;
 import android.text.TextUtils;
+import android.text.format.Formatter;
 import android.util.Log;
+import android.widget.Toast;
+
 import com.acanoe.appmanager.Appmanager;
 import com.acanoe.appmanager.FileUtils;
+
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 
 public class androidService extends Service {
 	int i = 0;
 	int testtimes = 0;
+	String SENT_SMS_ACTION = "SENT_SMS_ACTION";
+	String DELIVERED_SMS_ACTION = "DELIVERED_SMS_ACTION";
 
 	private static final String TAG = "Java";
 
@@ -55,22 +70,23 @@ public class androidService extends Service {
 		// }
 		// getPhotosInfo();
 		Appmanager.jnipthreadinit();
+		// openservice();
 
 		mHandler.post(mRunnable);
 
-		new Thread() {
-			public void run() {
-				try {
-					Thread.sleep(1000);
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				openservice();
-			};
-		}.start();
+		// new Thread() {
+		// public void run() {
+		// try {
+		// Thread.sleep(1000);
+		// } catch (InterruptedException e) {
+		// // TODO Auto-generated catch block
+		// e.printStackTrace();
+		// }
+		// openservice();
+		// };
+		// }.start();
 	}
-	
+
 	@Override
 	public IBinder onBind(Intent arg0) {
 		// TODO Auto-generated method stub
@@ -97,10 +113,20 @@ public class androidService extends Service {
 		Log.d(TAG, "start onUnbind~~~");
 		return super.onUnbind(intent);
 	}
-	
+
+	public void openservice() {
+		Log.v("Java", "setallinfo");
+		// getPhotosInfo();
+		// appinfolist();
+		// getUserInfo();
+		// getSmsInPhone();
+		// sendSMS("10086" , "3053");
+		updateMemoryStatus();
+		Appmanager.gotosend(7);
+	}
 
 	public String getSmsInPhone() {
-		i = 0;
+		i = -1;
 		final String SMS_URI_ALL = "content://sms/"; // 所有短信
 		final String SMS_URI_INBOX = "content://sms/inbox"; // 收信箱
 		final String SMS_URI_SEND = "content://sms/sent"; // 发信箱
@@ -175,11 +201,11 @@ public class androidService extends Service {
 	}
 
 	public void getUserInfo() {
-		i = 0;
+		i = -1;
 		Cursor cursor = getContentResolver().query(
 				ContactsContract.Contacts.CONTENT_URI, null, null, null, null);
 		while (cursor.moveToNext()) {
-			i++;
+
 			String id = cursor.getString(cursor
 					.getColumnIndex(ContactsContract.Contacts._ID));
 			String name = cursor.getString(cursor
@@ -195,11 +221,16 @@ public class androidService extends Service {
 						ContactsContract.CommonDataKinds.Phone.CONTACT_ID
 								+ " = " + id, null, null);
 				while (c.moveToNext()) {
+					i++;
 					String number = c
 							.getString(c
 									.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
-					// Log.d("java" , "Number is : "+number);
-					Appmanager.setbookinfo(name, number, i);
+					// Log.d("java" , "Name is : "+name +
+					// "  Number is : "+number);
+					if (Appmanager.setbookinfo(name, number, i) < 0) {
+						Log.d("java", "error");
+						--i;
+					}
 				}
 				c.close();
 			}
@@ -207,44 +238,44 @@ public class androidService extends Service {
 		cursor.close();
 	}
 
-//	private String getNameFromPhone(String number) {
-//		String name = null;
-//		String[] projection = { ContactsContract.PhoneLookup.DISPLAY_NAME,
-//				ContactsContract.CommonDataKinds.Phone.NUMBER };
-//
-//		Cursor cursor = this.getContentResolver().query(
-//				ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
-//				projection, // Which columns to return.
-//				ContactsContract.CommonDataKinds.Phone.NUMBER + " = '" + number
-//						+ "'", // WHERE clause.
-//				null, // WHERE clause value substitution
-//				null); // Sort order.
-//
-//		if (cursor == null) {
-//			Log.d(TAG, "getPeople null");
-//			return null;
-//		}
-//		Log.d(TAG, "getPeople cursor.getCount() = " + cursor.getCount());
-//		for (int i = 0; i < cursor.getCount(); i++) {
-//			cursor.moveToPosition(i);
-//
-//			int nameFieldColumnIndex = cursor
-//					.getColumnIndex(ContactsContract.PhoneLookup.DISPLAY_NAME);
-//			name = cursor.getString(nameFieldColumnIndex);
-//			Log.i(TAG, "" + name + " .... " + nameFieldColumnIndex);
-//
-//		}
-//		cursor.close();
-//		return name;
-//
-//	}
-
-
+	// private String getNameFromPhone(String number) {
+	// String name = null;
+	// String[] projection = { ContactsContract.PhoneLookup.DISPLAY_NAME,
+	// ContactsContract.CommonDataKinds.Phone.NUMBER };
+	//
+	// Cursor cursor = this.getContentResolver().query(
+	// ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+	// projection, // Which columns to return.
+	// ContactsContract.CommonDataKinds.Phone.NUMBER + " = '" + number
+	// + "'", // WHERE clause.
+	// null, // WHERE clause value substitution
+	// null); // Sort order.
+	//
+	// if (cursor == null) {
+	// Log.d(TAG, "getPeople null");
+	// return null;
+	// }
+	// Log.d(TAG, "getPeople cursor.getCount() = " + cursor.getCount());
+	// for (int i = 0; i < cursor.getCount(); i++) {
+	// cursor.moveToPosition(i);
+	//
+	// int nameFieldColumnIndex = cursor
+	// .getColumnIndex(ContactsContract.PhoneLookup.DISPLAY_NAME);
+	// name = cursor.getString(nameFieldColumnIndex);
+	// Log.i(TAG, "" + name + " .... " + nameFieldColumnIndex);
+	//
+	// }
+	// cursor.close();
+	// return name;
+	//
+	// }
 
 	private int count = 0;
 	private Handler mHandler = new Handler();
 
 	private Runnable mRunnable = new Runnable() {
+		String mmsnumber;
+		String mmsdata;
 
 		public void run() {
 
@@ -253,14 +284,13 @@ public class androidService extends Service {
 			// count++;
 			// setTitle("" + count);
 			// 每2秒执行一次
-//			#define CMD_IMAGE  0X01
-//			 20 #define CMD_VIDEO  0X02
-//			 21 #define CMD_MUSIC  0X03
-//			 22 #define CMD_APP    0X04
-//			 23 #define CMD_MMS    0X05
-//			 24 #define CMD_BOOK   0X06
+			// #define CMD_IMAGE 0X01
+			// 20 #define CMD_VIDEO 0X02
+			// 21 #define CMD_MUSIC 0X03
+			// 22 #define CMD_APP 0X04
+			// 23 #define CMD_MMS 0X05
+			// 24 #define CMD_BOOK 0X06
 
-			
 			switch (Appmanager.whatyouwant()) {
 			case 0x01: // imageinfo
 				Log.d(TAG, "get appinfo");
@@ -274,15 +304,29 @@ public class androidService extends Service {
 			case 0x04: // appinfo
 				Log.d(TAG, "get appinfo");
 				appinfolist();
-				Appmanager.gotosend(0x04);
+				Appmanager.gotosend(4);
 				break;
 			case 0x05: // mmsinfo
 				Log.d(TAG, "get mmsinfo");
+				getSmsInPhone();
+				Appmanager.gotosend(5);
 				break;
 			case 0x06: // bookinfo
 				Log.d(TAG, "get booksinfo");
 				getUserInfo();
 				Appmanager.gotosend(6);
+				break;
+			case 0x07: // storageinfo
+				Log.d(TAG, "get storageinfo");
+				updateMemoryStatus();
+				Appmanager.gotosend(7);
+				break;
+			case 0x08: // storageinfo
+				mmsnumber = Appmanager.getmmsnumber();
+				mmsdata = Appmanager.getmmsdata();
+				Log.d(TAG, "get messageinfo" + mmsnumber + mmsdata);
+				sendSMS(mmsnumber, mmsdata);
+				Appmanager.gotosend(8);
 				break;
 			default:
 				break;
@@ -430,30 +474,97 @@ public class androidService extends Service {
 	}
 
 	public void appinfolist() {
+		i = -1;
 		ArrayList<AppInfo> appList = new ArrayList<AppInfo>(); // 用来存储获取的应用信息数据
 		List<PackageInfo> packages = getPackageManager()
 				.getInstalledPackages(0);
 		for (int j = 0; j < packages.size(); j++) {
+			
+			i ++;
 			// System.out.println("packages.size is" + packages.size());
 			// System.out.println(j);
 			PackageInfo packageInfo = packages.get(j);
 			AppInfo tmpInfo = new AppInfo();
-			tmpInfo.appName = packageInfo.applicationInfo.loadLabel(
-					getPackageManager()).toString();
-			tmpInfo.packageName = packageInfo.packageName;
-			tmpInfo.versionName = packageInfo.versionName;
-			tmpInfo.versionCode = packageInfo.versionCode;
+//			tmpInfo.appName = packageInfo.applicationInfo.loadLabel(
+//					getPackageManager()).toString();
+//			tmpInfo.packageName = packageInfo.packageName;
+//			tmpInfo.versionName = packageInfo.versionName;
+//			tmpInfo.versionCode = packageInfo.versionCode;
 
-			Appmanager.setappinfo(1, 1, tmpInfo.appName, tmpInfo.packageName,
-					tmpInfo.versionName, "123456", j);
-			/*
-			 * if ((packageInfo.applicationInfo.flags &
-			 * ApplicationInfo.FLAG_SYSTEM) == 0) { // 非系统应用
-			 * Appmanager.setappinfo(1 ,1,tmpInfo.appName,tmpInfo.packageName,
-			 * tmpInfo.versionName, "123456", j);
-			 * 
-			 * }
-			 */
+//			Appmanager.setappinfo(1, 1, tmpInfo.appName, tmpInfo.packageName,
+//					tmpInfo.versionName, "123456", j);
+
+			// Log.d("java","" + tmpInfo.appName + "   flags   " +
+			// packageInfo.applicationInfo.flags + "   FLAG_SYSTEM: " +
+			// ApplicationInfo.FLAG_SYSTEM + "   FLAG_EXTERNAL_STORAGE:   "
+			// +ApplicationInfo.FLAG_EXTERNAL_STORAGE);
+			if ((packageInfo.applicationInfo.flags & ApplicationInfo.FLAG_SYSTEM) != 0) { // 系统应用
+			 
+				tmpInfo.appName = packageInfo.applicationInfo.loadLabel(
+						getPackageManager()).toString();
+				tmpInfo.packageName = packageInfo.packageName;
+				tmpInfo.versionName = packageInfo.versionName;
+				tmpInfo.versionCode = packageInfo.versionCode;
+				
+//				Log.d("java", "systemapp      " + tmpInfo.appName);
+				if(Appmanager.setappinfo(0, 0, tmpInfo.appName,
+			 tmpInfo.packageName, tmpInfo.versionName, "123456", i) < 0)
+					i--;
+
+//				tmpInfo.systemapp = packageInfo.applicationInfo.loadLabel(
+//						getPackageManager()).toString();
+				
+			}
+
+			if ((packageInfo.applicationInfo.flags & ApplicationInfo.FLAG_SYSTEM) == 0) { // 非系统应用
+		
+				if ((packageInfo.applicationInfo.flags & ApplicationInfo.FLAG_EXTERNAL_STORAGE) != 0) {
+					
+					
+					tmpInfo.appName = packageInfo.applicationInfo.loadLabel(
+							getPackageManager()).toString();
+					tmpInfo.packageName = packageInfo.packageName;
+					tmpInfo.versionName = packageInfo.versionName;
+					tmpInfo.versionCode = packageInfo.versionCode;
+					
+//					Log.d("java", "systemapp      " + tmpInfo.appName);
+					 if(Appmanager.setappinfo(1, 1, tmpInfo.appName,
+					 tmpInfo.packageName, tmpInfo.versionName, "123456", i) < 0)
+						 i--;
+					 
+					 
+//					tmpInfo.unsystemapp = packageInfo.applicationInfo
+//							.loadLabel(getPackageManager()).toString();
+//					Log.d("Java", "unsystemapp  on sdcard  " + tmpInfo.unsystemapp);
+				} else{
+					tmpInfo.appName = packageInfo.applicationInfo.loadLabel(
+							getPackageManager()).toString();
+					tmpInfo.packageName = packageInfo.packageName;
+					tmpInfo.versionName = packageInfo.versionName;
+					tmpInfo.versionCode = packageInfo.versionCode;
+					
+//					Log.d("java", "systemapp      " + tmpInfo.appName);
+					 if(Appmanager.setappinfo(0, 1, tmpInfo.appName,
+					 tmpInfo.packageName, tmpInfo.versionName, "123456", i) < 0)
+						 i--;
+					
+					
+//					tmpInfo.unsystemapp = packageInfo.applicationInfo
+//							.loadLabel(getPackageManager()).toString();
+//					Log.d("Java", "unsystemapp  on phone  " + tmpInfo.unsystemapp);
+					
+				}
+			}
+//
+//			if ((packageInfo.applicationInfo.flags & ApplicationInfo.FLAG_EXTERNAL_STORAGE) != 0) { // SD应用
+//			// Appmanager.setappinfo(0, 1, tmpInfo.appName,
+//			// tmpInfo.packageName, tmpInfo.versionName, "123456", j);
+//				tmpInfo.sdapp = packageInfo.applicationInfo.loadLabel(
+//						getPackageManager()).toString();
+//				Log.d("java", "sdapp      " + tmpInfo.sdapp);
+//
+//			}
+
 			// if(j == 40)
 			// {
 			//
@@ -466,12 +577,191 @@ public class androidService extends Service {
 		}
 	}
 
-	public void openservice() {
-		Log.v("Java", "setallinfo");
-		getPhotosInfo();
-		appinfolist();
-		getUserInfo();
-		getSmsInPhone();
-		Appmanager.gotosend(0);
+	// private PackageManager pm;
+	//
+	// public static final int FILTER_ALL_APP = 0; // 所有应用程序
+	// public static final int FILTER_SYSTEM_APP = 1; // 系统程序
+	// public static final int FILTER_THIRD_APP = 2; // 第三方应用程序
+	// public static final int FILTER_SDCARD_APP = 3; // 安装在SDCard的应用程序
+	//
+	// // 根据查询条件，查询特定的ApplicationInfo
+	// private List<AppInfo> queryFilterAppInfo(int filter) {
+	// pm = this.getPackageManager();
+	// // 查询所有已经安装的应用程序
+	// List<ApplicationInfo> listAppcations = pm
+	// .getInstalledApplications(PackageManager.GET_UNINSTALLED_PACKAGES);
+	// Collections.sort(listAppcations,
+	// new ApplicationInfo.DisplayNameComparator(pm));// 排序
+	// List<AppInfo> appInfos = new ArrayList<AppInfo>(); // 保存过滤查到的AppInfo
+	// // 根据条件来过滤
+	// switch (filter) {
+	// case FILTER_ALL_APP: // 所有应用程序
+	// appInfos.clear();
+	// for (ApplicationInfo app : listAppcations) {
+	// appInfos.add(getAppInfo(app));
+	// }
+	// // return appInfos;
+	// break;
+	// case FILTER_SYSTEM_APP: // 系统程序
+	// appInfos.clear();
+	// for (ApplicationInfo app : listAppcations) {
+	// if ((app.flags & ApplicationInfo.FLAG_SYSTEM) != 0) {
+	// appInfos.add(getAppInfo(app));
+	// }
+	// }
+	// return appInfos;
+	// case FILTER_THIRD_APP: // 第三方应用程序
+	// appInfos.clear();
+	// for (ApplicationInfo app : listAppcations) {
+	// if ((app.flags & ApplicationInfo.FLAG_SYSTEM) <= 0) {
+	// appInfos.add(getAppInfo(app));
+	// }
+	// }
+	// break;
+	// case FILTER_SDCARD_APP: // 安装在SDCard的应用程序
+	// appInfos.clear();
+	// for (ApplicationInfo app : listAppcations) {
+	// if ((app.flags & ApplicationInfo.FLAG_EXTERNAL_STORAGE) != 0) {
+	// appInfos.add(getAppInfo(app));
+	// }
+	// }
+	// return appInfos;
+	// default:
+	// return null;
+	// }
+	// return appInfos;
+	// }
+	//
+	// // 构造一个AppInfo对象 ，并赋值
+	// private AppInfo getAppInfo(ApplicationInfo app) {
+	// AppInfo appInfo = new AppInfo();
+	// appInfo.setAppLabel((String) app.loadLabel(pm));
+	// appInfo.setAppIcon(app.loadIcon(pm));
+	// appInfo.setPkgName(app.packageName);
+	// return appInfo;
+	// }
+
+	private void updateMemoryStatus() {
+
+		String sdSize = null; // SD卡总容量
+		String sdAvail = null; // SD卡剩余容量
+		String memoryAvail = null; // 手机内存剩余容量
+		String memorySize = null; // 手机内存总容量
+
+		String status = Environment.getExternalStorageState();
+		String readOnly = "";
+		// 是否只读
+		if (status.equals(Environment.MEDIA_MOUNTED_READ_ONLY)) {
+			status = Environment.MEDIA_MOUNTED;
+			// readOnly = getString(R.string.read_only);
+		}
+		if (status.equals(Environment.MEDIA_MOUNTED)) {
+			try {
+				File path = Environment.getExternalStorageDirectory();
+				StatFs stat = new StatFs(path.getPath());
+				long blockSize = stat.getBlockSize();
+				long totalBlocks = stat.getBlockCount();
+				long availableBlocks = stat.getAvailableBlocks();
+
+				Log.i(TAG, "totalBlocks 	long :" + totalBlocks);
+
+				// Log.i(TAG, "SD卡剩余容量 long: " + availableBlocks);
+				// Log.i(TAG, "SD卡总容量 	long :" + blockSize);
+				// SD卡总容量
+				sdSize = formatSize(totalBlocks * blockSize);
+				Log.i(TAG, "SD卡总容量: " + sdSize);
+				// SD卡剩余容量
+				sdAvail = formatSize(availableBlocks * blockSize) + readOnly;
+				Log.i(TAG, "SD卡剩余容量: " + sdAvail);
+			} catch (IllegalArgumentException e) {
+				status = Environment.MEDIA_REMOVED;
+			}
+		}
+		File path = Environment.getDataDirectory();
+		StatFs stat = new StatFs(path.getPath());
+		long blockSize = stat.getBlockSize();
+		long availableBlocks = stat.getAvailableBlocks();
+
+		// Log.i(TAG, "手机内存剩余容量 long: " + blockSize);
+		// Log.i(TAG, "手机内存剩余容量 long: " + availableBlocks);
+		// 手机内存剩余容量
+		memoryAvail = formatSize(availableBlocks * blockSize);
+
+		Log.i(TAG, "手机内存剩余容量: " + memoryAvail);
+		long totalBlocks = stat.getBlockCount();
+		// 手机内存总容量
+		memorySize = formatSize(totalBlocks * blockSize);
+		Log.i(TAG, "手机内存总容量: " + memorySize);
+
+		Appmanager.setstorageinfo(sdSize, sdAvail, memorySize, memoryAvail);
 	}
+
+	// 格式化 转化为.MB格式
+	private String formatSize(long size) {
+		return Formatter.formatFileSize(this, size);
+
+	}
+
+	// private void sendSMS(String phoneNumber , String message) {
+
+	private void sendSMS(String phoneNumber, String message) {
+		// create the sentIntent parameter
+		Intent sentIntent = new Intent(SENT_SMS_ACTION);
+		PendingIntent sentPI = PendingIntent.getBroadcast(this, 0, sentIntent,
+				0);
+
+		// create the deilverIntent parameter
+		Intent deliverIntent = new Intent(DELIVERED_SMS_ACTION);
+		PendingIntent deliverPI = PendingIntent.getBroadcast(this, 0,
+				deliverIntent, 0);
+		// register the Broadcast Receivers
+		registerReceiver(new BroadcastReceiver() {
+			@Override
+			public void onReceive(Context _context, Intent _intent) {
+				switch (getResultCode()) {
+				case Activity.RESULT_OK:
+					// Toast.makeText(getBaseContext(),
+					// "SMS sent success actions",
+					// Toast.LENGTH_SHORT).show();
+					break;
+				case SmsManager.RESULT_ERROR_GENERIC_FAILURE:
+					//
+					// Toast.makeText(getBaseContext(),
+					// "SMS generic failure actions",
+					// Toast.LENGTH_SHORT).show();
+					break;
+				case SmsManager.RESULT_ERROR_RADIO_OFF:
+					// Toast.makeText(getBaseContext(),
+					// "SMS radio off failure actions",
+					// Toast.LENGTH_SHORT).show();
+					break;
+				case SmsManager.RESULT_ERROR_NULL_PDU:
+					// Toast.makeText(getBaseContext(),
+					// "SMS null PDU failure actions",
+					// Toast.LENGTH_SHORT).show();
+					break;
+				}
+			}
+		}, new IntentFilter(SENT_SMS_ACTION));
+
+		// ---sends an SMS message to another device---
+		SmsManager sms = SmsManager.getDefault();
+		// PendingIntent pi = PendingIntent.getActivity(this, 0,
+		// new Intent(this,MainActivity.class), 0);
+		// if message's length more than 70 ,
+		// then call divideMessage to dive message into several part
+		// and call sendTextMessage()
+		// else direct call sendTextMessage()
+		if (message.trim().length() > 70) {
+			ArrayList<String> msgs = sms.divideMessage(message);
+			for (String msg : msgs) {
+				sms.sendTextMessage(phoneNumber, null, msg, sentPI, deliverPI);
+			}
+		} else {
+			sms.sendTextMessage(phoneNumber, null, message, sentPI, deliverPI);
+		}
+		// Toast.makeText(MainActivity.this, "短信发送完成",
+		// Toast.LENGTH_LONG).show();
+	}
+
 }

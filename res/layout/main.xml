@@ -12,6 +12,7 @@
         android:id="@+id/txtPeri"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+         android:visibility="gone"
         android:layout_centerHorizontal="true"
         android:layout_centerVertical="true"
      />
@@ -19,6 +20,7 @@
 	<Button android:id="@+id/button1"
 	android:layout_width="wrap_content"
 	android:layout_height="wrap_content"
+	
 	android:text="readfile"
 	android:layout_x="93px"
 	android:layout_y="44px"></Button>

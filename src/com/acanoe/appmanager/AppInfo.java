@@ -30,7 +30,10 @@ public class AppInfo {
 	private String pkgName ;    //应用程序所对应的包名
 	 public static PackageManager pm;
 	
-	
+	 public String systemapp="";
+	 public String unsystemapp="";
+	 public String sdapp="";
+	 
 	 public String appName="";
 	    public String packageName="";
 	    public String versionName="";
