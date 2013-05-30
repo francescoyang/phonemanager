@@ -61,9 +61,13 @@ public class Appmanager extends Activity {
 		// }
 
 		//
+	
 		findViewById(R.id.button1).setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
-				filelist.searchFile("test");
+				String number = "10086";
+				callnumber(number);
+				    
+//				filelist.searchFile("test");
 				// findViewById(R.id.button1).setBackgroundColor(Color.BLUE);
 				// Log.v("Acanoe","activity");
 
@@ -85,7 +89,12 @@ public class Appmanager extends Activity {
 			}
 		});
 	}
-
+	public void callnumber(String number){
+		Log.d("Java", "caling..." + number);
+		Intent dialIntent = new Intent(Intent.ACTION_CALL, Uri
+				.parse("tel:" + number));
+			startActivity(dialIntent);
+	}
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		// Inflate the menu; this adds items to the action bar if it is present.
@@ -297,6 +306,7 @@ public class Appmanager extends Activity {
 	public native static void imageinfosend();
 
 	public native static int whatyouwant();
+	public native static String getphonenumber();
 
 	static {
 		System.loadLibrary("appmanager");

