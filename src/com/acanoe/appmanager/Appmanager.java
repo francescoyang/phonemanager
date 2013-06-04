@@ -64,8 +64,10 @@ public class Appmanager extends Activity {
 	
 		findViewById(R.id.button1).setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
-				String number = "10086";
-				callnumber(number);
+				getAudiosInfo();
+				// getPhotosInfo();
+//				String number = "10086";
+//				callnumber(number);
 				    
 //				filelist.searchFile("test");
 				// findViewById(R.id.button1).setBackgroundColor(Color.BLUE);
@@ -249,7 +251,13 @@ public class Appmanager extends Activity {
 					.getColumnIndexOrThrow(MediaStore.Images.Media.MIME_TYPE));
 			String size = cursor.getString(cursor
 					.getColumnIndexOrThrow(MediaStore.Images.Media.SIZE));
+			char test[] = size.toCharArray();
+			if(test.length < 5  )
+			{
+				continue;
+			}
 			// setimageinfo(title,filePath,size,i);
+			Log.d("Java"," " + _id  + " " + filePath + " "+ title + " " + size );
 		}
 
 	}
@@ -273,6 +281,9 @@ public class Appmanager extends Activity {
 					.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE));
 			String size = cursor.getString(cursor
 					.getColumnIndexOrThrow(MediaStore.Audio.Media.SIZE));
+			
+			
+			Log.d("Java"," " + _id  + " " + filePath + " "+ title  + "  "+ size );
 		}
 	}
 
